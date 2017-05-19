@@ -28,12 +28,8 @@ const createBlock = () => {
  * 
  */
 class Block extends Component {
-  foo () {
-    console.log('foo')
-  }
   render () {
-    const {connectDP, connectDS, connectDT, isOver, ...rest} = this.props
-    // console.log('isover', isOver)
+    const {connectDP, connectDS, connectDT, isOver, blockRef, onMove, ...rest} = this.props
     return connectDP(connectDS(connectDT(
         <div {...rest} />
       )))
@@ -44,7 +40,16 @@ const DraggableBlock = DragSource(
   'block', 
   {
     beginDrag (props) {
-      return {}
+      console.log('beginDrag', props.blockRef)
+      return {
+        blockRef: props.blockRef
+      }
+    },
+    endDrag (props, monitor) {
+      if (monitor.didDrop()) {
+        const {blockRef: dropRef} = monitor.getDropResult()
+        props.onMove(props.blockRef, dropRef)
+      }
     }
   },
   (connect, monitor) => {
@@ -60,9 +65,11 @@ const DroppableBlock = DropTarget(
     hover (props, monitor, component) {
       console.log('hover')
     },
-    drop (props) {
-      console.log('drop')
-      props.onDrop()
+    drop (props, monitor) {
+      console.log('drop', props.blockRef)
+      return {
+        blockRef: props.blockRef
+      }
     }
   },
   (connect, monitor) => {
@@ -75,22 +82,23 @@ const DroppableBlock = DropTarget(
 
 class App extends Component {
   state = {
-    list: f([]),
-    dragging: null
+    list: f([])
   }
   addBlock = () => this.setState(({list}) => ({
     list: list.push(createBlock())
   }))
-  move = (target) => {
-    const {list, dragging} = this.state
-    const originIndex = list.findIndex(({ref}) => ref === dragging)
-    const targetIndex = list.findIndex(({ref}) => ref === target)
-    console.log('move', originIndex, targetIndex, )
+  move = (dragRef, dropRef) => {
+    console.log('move', dragRef, dropRef)
+    const {list} = this.state
+    const dragIndex = list.findIndex(({ref}) => ref === dragRef)
+    const dropIndex = list.findIndex(({ref}) => ref === dropRef)
+    console.log('move found:', dragIndex, dropIndex)
     this.setState(() => {
+      const newList = list
+          .deleteAt(dragIndex)
+          .insertAt(dropIndex, list[dragIndex])
       return {
-        list: list
-          .deleteAt(originIndex)
-          .insertAt(targetIndex, list[originIndex]),
+        list: newList,
         dragging: null
       }
     })
@@ -103,12 +111,12 @@ class App extends Component {
         {this.state.list.map(({color, height, ref}) =>
             <DroppableBlock
               key={ref}
+              blockRef={ref}
               style={{
                 backgroundColor: color,
                 height: `${height}px`
               }}
-              onDrag={() => this.setState({dragging: ref})}
-              onDrop={() => this.move(ref)}
+              onMove={this.move}
             />
            )
         }
