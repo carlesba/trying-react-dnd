@@ -1,24 +1,20 @@
-.App {
-  text-align: center;
+.drop-area {
+  transition: 0.1s all ease-out;
 }
-
-.App-logo {
-  animation: App-logo-spin infinite 20s linear;
-  height: 80px;
+.grow-enter,
+.grow-appear {
+  opacity: 0.01;
+  height: 0 !important;
 }
-
-.App-header {
-  background-color: #222;
-  height: 150px;
-  padding: 20px;
-  color: white;
+.grow-enter.grow-enter-active,
+.grow-appear.grow-appear-active {
+  opacity: 1;
 }
-
-.App-intro {
-  font-size: large;
+.grow-leave {
+  opacity: 1;
 }
-
-@keyframes App-logo-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+.grow-leave.grow-leave-active {
+  transition-delay: 0.1s;
+  opacity: 0.01;
+  height: 0 !important;
 }
