@@ -43,17 +43,11 @@ const DroppableArea = ({...rest}) => <div {...rest} className='drop-area'>drop h
 class Block extends Component {
   shouldShowContent () {
     const {isOver, isDragging} = this.props
-    const somebodyIsDragginOverMe = isOver && !isDragging
-    // const meDragginOverSomeoneElse = isDragging && !isOver
-    const noDragging = !isDragging && !isOver
-    // return somebodyIsDragginOverMe || noDragging
-    return true
+    return !isDragging
   }
   shouldShowDroppableArea () {
     const {isOver, isDragging} = this.props
-    const somebodyIsDragginOverMe = isOver && !isDragging
-    const meDraggingOnMyself = isOver && isDragging
-    return somebodyIsDragginOverMe || meDraggingOnMyself
+    return isOver
   }
   render () {
     const {
@@ -96,55 +90,85 @@ class Block extends Component {
   }
 }
 
-const DraggableBlock = DragSource(
-  'block', 
-  {
-    beginDrag (props, monitor, component) {
-      console.log('beginDrag', props.blockRef)
+class FirstPosition extends Component {
+  render () {
+    const {droppableAreaHeight, connectDT} = this.props
+    return connectDT(
+      <div>
+      <CSSTransitions
+        component='div'
+        style={{height: '20px'}}
+        transitionName='grow'
+        transitionAppear={true}
+        transitionEnterTimeout={100}
+        transitionAppearTimeout={100}
+        transitionLeaveTimeout={200}
+      >
+      {this.props.isOver &&
+        <DroppableArea style={{height: droppableAreaHeight}} />
+      }
+      </CSSTransitions>
+      </div>
+    )
+  }
+}
 
-      return {
-        blockRef: props.blockRef,
-        initialDraggingHeight: findDOMNode(component).getBoundingClientRect().height
-      }
-    },
-    endDrag (props, monitor) {
-      if (monitor.didDrop()) {
-        const {blockRef: dropRef} = monitor.getDropResult()
-        props.onMove(props.blockRef, dropRef)
-      }
+const dragSpec = {
+  beginDrag (props, monitor, component) {
+    console.log('beginDrag', props.blockRef)
+
+    return {
+      blockRef: props.blockRef,
+      initialDraggingHeight: findDOMNode(component).getBoundingClientRect().height
     }
   },
-  (connect, monitor) => {
-    return {
-      connectDS: connect.dragSource(),
-      connectDP: connect.dragPreview(),
-      isDragging: monitor.isDragging()
+  endDrag (props, monitor) {
+    if (monitor.didDrop()) {
+      const {blockRef: dropRef} = monitor.getDropResult()
+      props.onMove(props.blockRef, dropRef)
     }
   }
-)(Block)
-const DroppableBlock = DropTarget(
-  'block',
-  {
-    hover (props, monitor, component) {
-      console.log('hover', monitor.getItem().initialDraggingHeight)
-    },
-    drop (props, monitor) {
-      // console.log('drop', props.blockRef)
-      return {
-        blockRef: props.blockRef
-      }
-    }
-  },
-  (connect, monitor) => {
-    const item = monitor.getItem() || {}
+}
+const dragConnect = (connect, monitor) => {
+  return {
+    connectDS: connect.dragSource(),
+    connectDP: connect.dragPreview(),
+    isDragging: monitor.isDragging()
+  }
+}
+const DraggableBlock = DragSource('block', dragSpec, dragConnect)(Block)
+
+const dropSpec = {
+  // hover (props, monitor, component) {
+  //   console.log('hover', monitor.getItem().initialDraggingHeight)
+  // },
+  drop (props, monitor) {
+    // console.log('drop', props.blockRef)
     return {
-      connectDT: connect.dropTarget(),
-      isOver: monitor.isOver(),
-      canDrop: monitor.canDrop(),
-      droppableAreaHeight: item.initialDraggingHeight
+      blockRef: props.blockRef
     }
   }
-)(DraggableBlock)
+}
+const dropConnect = (connect, monitor) => {
+  const item = monitor.getItem() || {}
+  // const initialY = monitor.getInitialSourceClientOffset().y
+
+  const showDropArea = monitor.isOver()
+  console.log(
+    monitor.getInitialClientOffset(),
+    monitor.getInitialSourceClientOffset(),
+    monitor.getClientOffset(),
+  )
+  return {
+    connectDT: connect.dropTarget(),
+    isOver: monitor.isOver(),
+    canDrop: monitor.canDrop(),
+    droppableAreaHeight: item.initialDraggingHeight
+  }
+}
+const DroppableBlock = DropTarget('block', dropSpec, dropConnect)(DraggableBlock)
+
+const FirstPositionDroppable = DropTarget('block', dropSpec, dropConnect)(FirstPosition)
 
 class App extends Component {
   state = {
@@ -157,7 +181,9 @@ class App extends Component {
     console.log('move', dragRef, dropRef)
     const {list} = this.state
     const dragIndex = list.findIndex(({ref}) => ref === dragRef)
-    const dropIndex = list.findIndex(({ref}) => ref === dropRef)
+    const dropIndex = dropRef
+      ? list.findIndex(({ref}) => ref === dropRef)
+      : 0
     console.log('move found:', dragIndex, dropIndex)
     this.setState(() => {
       const newList = list
@@ -174,6 +200,7 @@ class App extends Component {
     return (
       <div>
         <button onClick={this.addBlock}>add</button>
+        <FirstPositionDroppable />
         {this.state.list.map(({color, height, ref}) =>
             <DroppableBlock
               key={ref}
