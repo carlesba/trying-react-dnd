@@ -35,8 +35,24 @@ const initialState = f([
   createBlock()
 ])
 
-const DroppableArea = ({...rest}) => <div {...rest} className='drop-area'>drop here</div>
+const DropShadow = ({...rest}) => <div {...rest} className='drop-area'>drop here</div>
 
+const AreaShadow = ({connectDT, droppableAreaHeight, isOver}) => connectDT(
+  <div style={{height: '100px'}}>
+    <CSSTransitions
+      component='div'
+      transitionName='grow'
+      transitionAppear
+      transitionEnterTimeout={100}
+      transitionAppearTimeout={100}
+      transitionLeaveTimeout={200}
+    >
+      {isOver &&
+      <DropShadow style={{height: droppableAreaHeight}} />
+      }
+    </CSSTransitions>
+  </div>
+)
 /**
  *
  */
@@ -44,7 +60,7 @@ class Block extends Component {
   shouldShowContent () {
     return !this.props.isDragging
   }
-  shouldShowDroppableArea () {
+  shouldShowDropShadow () {
     return this.props.isOver
   }
   render () {
@@ -52,13 +68,8 @@ class Block extends Component {
       connectDP,
       connectDS,
       connectDT,
-      // isOver,
-      // blockRef,
-      // onMove,
-      // canDrop,
       color,
       height,
-      // isDragging,
       droppableAreaHeight
     } = this.props
     const styles = {
@@ -75,8 +86,8 @@ class Block extends Component {
           transitionAppearTimeout={100}
           transitionLeaveTimeout={200}
         >
-          {this.shouldShowDroppableArea() &&
-          <DroppableArea style={{height: droppableAreaHeight}} />
+          {this.shouldShowDropShadow() &&
+          <DropShadow style={{height: droppableAreaHeight}} />
           }
         </CSSTransitions>
         {this.shouldShowContent() &&
@@ -87,33 +98,8 @@ class Block extends Component {
   }
 }
 
-// class FirstPosition extends Component {
-//   render () {
-//     const {droppableAreaHeight, connectDT} = this.props
-//     return connectDT(
-//       <div>
-//       <CSSTransitions
-//         component='div'
-//         style={{height: '20px'}}
-//         transitionName='grow'
-//         transitionAppear={true}
-//         transitionEnterTimeout={100}
-//         transitionAppearTimeout={100}
-//         transitionLeaveTimeout={200}
-//       >
-//       {this.props.isOver &&
-//         <DroppableArea style={{height: droppableAreaHeight}} />
-//       }
-//       </CSSTransitions>
-//       </div>
-//     )
-//   }
-// }
-
 const dragSpec = {
   beginDrag (props, monitor, component) {
-    // console.log('beginDrag', props.blockRef)
-
     return {
       blockRef: props.blockRef,
       initialDraggingHeight: findDOMNode(component).getBoundingClientRect().height
@@ -121,8 +107,8 @@ const dragSpec = {
   },
   endDrag (props, monitor) {
     if (monitor.didDrop()) {
-      const {blockRef: dropRef} = monitor.getDropResult()
-      props.onMove(props.blockRef, dropRef)
+      const {blockRef, onDrop} = monitor.getDropResult()
+      onDrop(props.blockRef, blockRef)
     }
   }
 }
@@ -136,26 +122,15 @@ const dragConnect = (connect, monitor) => {
 const DraggableBlock = DragSource('block', dragSpec, dragConnect)(Block)
 
 const dropSpec = {
-  // hover (props, monitor, component) {
-  //   console.log('hover', monitor.getItem().initialDraggingHeight)
-  // },
   drop (props, monitor) {
-    // console.log('drop', props.blockRef)
     return {
-      blockRef: props.blockRef
+      blockRef: props.blockRef,
+      onDrop: props.onDrop
     }
   }
 }
 const dropConnect = (connect, monitor) => {
   const item = monitor.getItem() || {}
-  // const initialY = monitor.getInitialSourceClientOffset().y
-
-  // const showDropArea = monitor.isOver()
-  // console.log(
-  //   monitor.getInitialClientOffset(),
-  //   monitor.getInitialSourceClientOffset(),
-  //   monitor.getClientOffset()
-  // )
   return {
     connectDT: connect.dropTarget(),
     isOver: monitor.isOver(),
@@ -165,7 +140,7 @@ const dropConnect = (connect, monitor) => {
 }
 const DroppableBlock = DropTarget('block', dropSpec, dropConnect)(DraggableBlock)
 
-// const FirstPositionDroppable = DropTarget('block', dropSpec, dropConnect)(FirstPosition)
+const DroppableArea = DropTarget('block', dropSpec, dropConnect)(AreaShadow)
 
 class App extends Component {
   state = {
@@ -174,17 +149,14 @@ class App extends Component {
   addBlock = () => this.setState(({list}) => ({
     list: list.push(createBlock())
   }))
-  move = (dragRef, dropRef) => {
-    const {list} = this.state
-    console.log('list::', list.map(({ref}) => ref))
-    console.log('move refs', dragRef, dropRef)
-    const dragIndex = list.findIndex(({ref}) => ref === dragRef)
-    const dropIndex = list.findIndex(({ref}) => ref === dropRef)
-    // console.log('move index', dragIndex, dropIndex)
-    this.setState(() => {
+  getIndex = (targetRef) =>
+    this.state.list.findIndex(({ref}) => ref === targetRef)
+  move = (targetIndex, dropIndex) => {
+    console.log('move', targetIndex, dropIndex)
+    this.setState(({list}) => {
       const newList = list
-          .deleteAt(dragIndex)
-          .insertAt(dropIndex > dragIndex ? dropIndex - 1 : dropIndex, list[dragIndex])
+          .deleteAt(targetIndex)
+          .insertAt(dropIndex > targetIndex ? dropIndex - 1 : dropIndex, list[targetIndex])
       console.log('list::', newList.map(({ref}) => ref))
       return {
         list: newList,
@@ -193,7 +165,6 @@ class App extends Component {
     })
   }
   render () {
-    // console.log(this.state.list, this.state.dragging)
     return (
       <div>
         <button onClick={this.addBlock}>add</button>
@@ -203,10 +174,22 @@ class App extends Component {
             blockRef={ref}
             color={color}
             height={`${height}px`}
-            onMove={this.move}
+            onDrop={(dragIndex, dropIndex) => this.move(
+              this.getIndex(dragIndex),
+              this.getIndex(dropIndex)
+            )}
             />
            )
         }
+        <DroppableArea
+          onDrop={(targetRef) => {
+            console.log('this.state.list.length', this.state.list.length)
+            this.move(
+              this.getIndex(targetRef),
+              this.state.list.length - 1
+            )
+          }}
+        />
       </div>
     )
   }
