@@ -186,7 +186,7 @@ class App extends Component {
             console.log('this.state.list.length', this.state.list.length)
             this.move(
               this.getIndex(targetRef),
-              this.state.list.length - 1
+              this.state.list.length
             )
           }}
         />
