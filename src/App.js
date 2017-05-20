@@ -38,31 +38,28 @@ const initialState = f([
 const DroppableArea = ({...rest}) => <div {...rest} className='drop-area'>drop here</div>
 
 /**
- * 
+ *
  */
 class Block extends Component {
   shouldShowContent () {
-    const {isOver, isDragging} = this.props
-    return !isDragging
+    return !this.props.isDragging
   }
   shouldShowDroppableArea () {
-    const {isOver, isDragging} = this.props
-    return isOver
+    return this.props.isOver
   }
   render () {
     const {
       connectDP,
       connectDS,
       connectDT,
-      isOver,
-      blockRef,
-      onMove,
-      canDrop,
+      // isOver,
+      // blockRef,
+      // onMove,
+      // canDrop,
       color,
       height,
-      isDragging,
-      droppableAreaHeight,
-      ...rest
+      // isDragging,
+      droppableAreaHeight
     } = this.props
     const styles = {
       backgroundColor: color,
@@ -70,52 +67,52 @@ class Block extends Component {
     }
     return connectDP(connectDS(connectDT(
       <div>
-        {this.shouldShowContent() &&
-          <div className='content' style={styles} />
-        }
         <CSSTransitions
           component='div'
           transitionName='grow'
-          transitionAppear={true}
+          transitionAppear
           transitionEnterTimeout={100}
           transitionAppearTimeout={100}
           transitionLeaveTimeout={200}
         >
-        {this.shouldShowDroppableArea() &&
+          {this.shouldShowDroppableArea() &&
           <DroppableArea style={{height: droppableAreaHeight}} />
-        }
+          }
         </CSSTransitions>
+        {this.shouldShowContent() &&
+          <div className='content' style={styles} />
+        }
       </div>
       )))
   }
 }
 
-class FirstPosition extends Component {
-  render () {
-    const {droppableAreaHeight, connectDT} = this.props
-    return connectDT(
-      <div>
-      <CSSTransitions
-        component='div'
-        style={{height: '20px'}}
-        transitionName='grow'
-        transitionAppear={true}
-        transitionEnterTimeout={100}
-        transitionAppearTimeout={100}
-        transitionLeaveTimeout={200}
-      >
-      {this.props.isOver &&
-        <DroppableArea style={{height: droppableAreaHeight}} />
-      }
-      </CSSTransitions>
-      </div>
-    )
-  }
-}
+// class FirstPosition extends Component {
+//   render () {
+//     const {droppableAreaHeight, connectDT} = this.props
+//     return connectDT(
+//       <div>
+//       <CSSTransitions
+//         component='div'
+//         style={{height: '20px'}}
+//         transitionName='grow'
+//         transitionAppear={true}
+//         transitionEnterTimeout={100}
+//         transitionAppearTimeout={100}
+//         transitionLeaveTimeout={200}
+//       >
+//       {this.props.isOver &&
+//         <DroppableArea style={{height: droppableAreaHeight}} />
+//       }
+//       </CSSTransitions>
+//       </div>
+//     )
+//   }
+// }
 
 const dragSpec = {
   beginDrag (props, monitor, component) {
-    console.log('beginDrag', props.blockRef)
+    // console.log('beginDrag', props.blockRef)
 
     return {
       blockRef: props.blockRef,
@@ -153,12 +150,12 @@ const dropConnect = (connect, monitor) => {
   const item = monitor.getItem() || {}
   // const initialY = monitor.getInitialSourceClientOffset().y
 
-  const showDropArea = monitor.isOver()
-  console.log(
-    monitor.getInitialClientOffset(),
-    monitor.getInitialSourceClientOffset(),
-    monitor.getClientOffset(),
-  )
+  // const showDropArea = monitor.isOver()
+  // console.log(
+  //   monitor.getInitialClientOffset(),
+  //   monitor.getInitialSourceClientOffset(),
+  //   monitor.getClientOffset()
+  // )
   return {
     connectDT: connect.dropTarget(),
     isOver: monitor.isOver(),
@@ -168,7 +165,7 @@ const dropConnect = (connect, monitor) => {
 }
 const DroppableBlock = DropTarget('block', dropSpec, dropConnect)(DraggableBlock)
 
-const FirstPositionDroppable = DropTarget('block', dropSpec, dropConnect)(FirstPosition)
+// const FirstPositionDroppable = DropTarget('block', dropSpec, dropConnect)(FirstPosition)
 
 class App extends Component {
   state = {
@@ -178,36 +175,35 @@ class App extends Component {
     list: list.push(createBlock())
   }))
   move = (dragRef, dropRef) => {
-    console.log('move', dragRef, dropRef)
     const {list} = this.state
+    console.log('list::', list.map(({ref}) => ref))
+    console.log('move refs', dragRef, dropRef)
     const dragIndex = list.findIndex(({ref}) => ref === dragRef)
-    const dropIndex = dropRef
-      ? list.findIndex(({ref}) => ref === dropRef)
-      : 0
-    console.log('move found:', dragIndex, dropIndex)
+    const dropIndex = list.findIndex(({ref}) => ref === dropRef)
+    // console.log('move index', dragIndex, dropIndex)
     this.setState(() => {
       const newList = list
           .deleteAt(dragIndex)
-          .insertAt(dropIndex, list[dragIndex])
+          .insertAt(dropIndex > dragIndex ? dropIndex - 1 : dropIndex, list[dragIndex])
+      console.log('list::', newList.map(({ref}) => ref))
       return {
         list: newList,
         dragging: null
       }
     })
   }
-  render() {
-    console.log(this.state.list, this.state.dragging)
+  render () {
+    // console.log(this.state.list, this.state.dragging)
     return (
       <div>
         <button onClick={this.addBlock}>add</button>
-        <FirstPositionDroppable />
         {this.state.list.map(({color, height, ref}) =>
-            <DroppableBlock
-              key={ref}
-              blockRef={ref}
-              color={color}
-              height={`${height}px`}
-              onMove={this.move}
+          <DroppableBlock
+            key={ref}
+            blockRef={ref}
+            color={color}
+            height={`${height}px`}
+            onMove={this.move}
             />
            )
         }
