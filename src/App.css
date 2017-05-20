@@ -1,5 +1,14 @@
 .drop-area {
   transition: 0.1s all ease-out;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #666;
+  font-weight: bold;
+  font-size: 2em;
+  background-color: #CCC;
+  border: 5px dashed #AAA;
+  box-sizing: border-box;
 }
 .grow-enter,
 .grow-appear {

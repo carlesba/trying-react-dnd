@@ -38,7 +38,7 @@ const initialState = f([
 const DropShadow = ({...rest}) => <div {...rest} className='drop-area'>drop here</div>
 
 const AreaShadow = ({connectDT, droppableAreaHeight, isOver}) => connectDT(
-  <div style={{height: '100px'}}>
+  <div style={{height: droppableAreaHeight}}>
     <CSSTransitions
       component='div'
       transitionName='grow'
