@@ -39,18 +39,18 @@ const DropShadow = ({...rest}) => <div {...rest} className='drop-area'>drop here
 
 const AreaShadow = ({connectDT, droppableAreaHeight, isOver}) => connectDT(
   <div style={{height: droppableAreaHeight}}>
-    <CSSTransitions
+    {/* <CSSTransitions
       component='div'
       transitionName='grow'
       transitionAppear
       transitionEnterTimeout={100}
       transitionAppearTimeout={100}
       transitionLeaveTimeout={200}
-    >
+    > */}
       {isOver &&
       <DropShadow style={{height: droppableAreaHeight}} />
       }
-    </CSSTransitions>
+    {/* </CSSTransitions> */}
   </div>
 )
 /**
@@ -78,18 +78,18 @@ class Block extends Component {
     }
     return connectDP(connectDS(connectDT(
       <div>
-        <CSSTransitions
+        {/* <CSSTransitions
           component='div'
           transitionName='grow'
           transitionAppear
           transitionEnterTimeout={100}
           transitionAppearTimeout={100}
           transitionLeaveTimeout={200}
-        >
+        > */}
           {this.shouldShowDropShadow() &&
           <DropShadow style={{height: droppableAreaHeight}} />
           }
-        </CSSTransitions>
+        {/* </CSSTransitions> */}
         {this.shouldShowContent() &&
           <div className='content' style={styles} />
         }

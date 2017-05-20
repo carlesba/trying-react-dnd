@@ -1,5 +1,5 @@
 .drop-area {
-  transition: 0.1s all ease-out;
+  /*transition: 0.1s all ease-out;*/
   display: flex;
   justify-content: center;
   align-items: center;
@@ -10,7 +10,7 @@
   border: 5px dashed #AAA;
   box-sizing: border-box;
 }
-.grow-enter,
+/*.grow-enter,
 .grow-appear {
   opacity: 0.01;
   height: 0 !important;
@@ -26,4 +26,4 @@
   transition-delay: 0.1s;
   opacity: 0.01;
   height: 0 !important;
-}
+}*/
